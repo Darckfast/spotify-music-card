@@ -77,9 +77,7 @@ func getCurrentMusic(accessToken string, context context.Context) spotify.TMusic
 	var musicPlaying spotify.TMusicPlaying
 
 	if response.StatusCode != 200 {
-		defaultCover := os.Getenv("DEFAULT_COVER")
-
-		musicPlaying.AlbumCover = getAlbumCoverInB64(defaultCover)
+		musicPlaying.AlbumCover = os.Getenv("DEFAULT_COVER")
 
 		return musicPlaying
 	}
@@ -142,7 +140,7 @@ func Handler(writer http.ResponseWriter, request *http.Request) {
 	auth := authenticate(context)
 	musicPlaying := getCurrentMusic(auth.AccessToken, context)
 
-	writer.Header().Add("Content-Type", "text/html")
+	writer.Header().Add("Content-Type", "image/svg+xml")
 
 	htmlPage := formatHTMLTemplate(musicPlaying)
 
