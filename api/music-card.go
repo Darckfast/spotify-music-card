@@ -140,7 +140,7 @@ func Handler(writer http.ResponseWriter, request *http.Request) {
 	auth := authenticate(context)
 	musicPlaying := getCurrentMusic(auth.AccessToken, context)
 
-	writer.Header().Add("Content-Type", "text/html")
+	writer.Header().Add("Content-Type", "image/svg+xml")
 
 	htmlPage := formatHTMLTemplate(musicPlaying)
 
