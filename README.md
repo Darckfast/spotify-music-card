@@ -1,3 +1,5 @@
 # Spotify music card
 
-![music card](spotify-card-ten.vercel.app/api/spotify)
+![Music card](https://spotify-card.darckfast.vercel.app/api/music-card)
+
+Inspired by <https://github.com/novatorem/novatorem>
