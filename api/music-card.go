@@ -77,9 +77,7 @@ func getCurrentMusic(accessToken string, context context.Context) spotify.TMusic
 	var musicPlaying spotify.TMusicPlaying
 
 	if response.StatusCode != 200 {
-		defaultCover := os.Getenv("DEFAULT_COVER")
-
-		musicPlaying.AlbumCover = getAlbumCoverInB64(defaultCover)
+		musicPlaying.AlbumCover = os.Getenv("DEFAULT_COVER")
 
 		return musicPlaying
 	}
