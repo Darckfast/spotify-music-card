@@ -1,17 +1,20 @@
-package handler
+package main
 
 import (
 	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	pages "main/static"
+	"html/template"
 	spotify "main/types"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 var API_URL = "https://api.spotify.com/v1"
@@ -77,7 +80,7 @@ func getCurrentMusic(accessToken string, context context.Context) spotify.TMusic
 	var musicPlaying spotify.TMusicPlaying
 
 	if response.StatusCode != 200 {
-		musicPlaying.AlbumCover = os.Getenv("DEFAULT_COVER")
+		musicPlaying.AlbumCover = template.URL(os.Getenv("DEFAULT_COVER"))
 
 		return musicPlaying
 	}
@@ -103,7 +106,7 @@ func getCurrentMusic(accessToken string, context context.Context) spotify.TMusic
 	return musicPlaying
 }
 
-func getAlbumCoverInB64(imageUrl string) string {
+func getAlbumCoverInB64(imageUrl string) template.URL {
 	response, err := http.Get(imageUrl)
 
 	if err != nil {
@@ -116,33 +119,60 @@ func getAlbumCoverInB64(imageUrl string) string {
 	bytesBuffer.ReadFrom(response.Body)
 	imageB64 := base64.StdEncoding.EncodeToString(bytesBuffer.Bytes())
 
-	return "data:image/jpeg;base64," + imageB64
+	return template.URL("data:image/jpeg;base64," + imageB64)
 }
 
-func formatHTMLTemplate(musicPlaying spotify.TMusicPlaying) string {
+func formatHTMLTemplate(musicPlaying spotify.TMusicPlaying) (string, error) {
+	var pageTemplate *template.Template
+
+	var err error
+
 	if musicPlaying.Name == "" {
-		return pages.NoMusic
+		pageTemplate, err = template.
+			New("nomusic.html").
+			ParseFiles("../../public/nomusic.html")
+	} else {
+		pageTemplate, err = template.
+			New("music.html").
+			ParseFiles("../../public/music.html")
 	}
 
-	templatePage := strings.
-		Replace(pages.WithMusic, "%IMAGE%", musicPlaying.AlbumCover, 1)
-	templatePage = strings.
-		Replace(templatePage, "%ARTIST_NAME%", musicPlaying.Artists, 1)
-	templatePage = strings.
-		Replace(templatePage, "%MUSIC_NAME%", musicPlaying.Name, 1)
+	var buf bytes.Buffer
 
-	return templatePage
+	if err != nil {
+		return "", err
+	}
+
+	err = pageTemplate.Execute(&buf, musicPlaying)
+
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), err
 }
 
-func Handler(writer http.ResponseWriter, request *http.Request) {
+func handler(request events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
 	context := context.Background()
 
 	auth := authenticate(context)
 	musicPlaying := getCurrentMusic(auth.AccessToken, context)
 
-	writer.Header().Add("Content-Type", "image/svg+xml")
+	htmlPage, err := formatHTMLTemplate(musicPlaying)
 
-	htmlPage := formatHTMLTemplate(musicPlaying)
+	if err != nil {
+		panic(err)
+	}
 
-	writer.Write([]byte(htmlPage))
+	return &events.APIGatewayProxyResponse{
+		Headers: map[string]string{
+			"Content-Type": "image/svg+xml",
+		},
+		StatusCode: 200,
+		Body:       htmlPage,
+	}, nil
+}
+
+func main() {
+	lambda.Start(handler)
 }
