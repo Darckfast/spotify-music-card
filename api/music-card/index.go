@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	pages "main/static"
+	"main/src/templates"
 	spotify "main/types"
 	"net/http"
 	"net/url"
@@ -121,11 +121,11 @@ func getAlbumCoverInB64(imageUrl string) string {
 
 func formatHTMLTemplate(musicPlaying spotify.TMusicPlaying) string {
 	if musicPlaying.Name == "" {
-		return pages.NoMusic
+		return templates.NoMusic
 	}
 
 	templatePage := strings.
-		Replace(pages.WithMusic, "%IMAGE%", musicPlaying.AlbumCover, 1)
+		Replace(templates.Music, "%IMAGE%", musicPlaying.AlbumCover, 1)
 	templatePage = strings.
 		Replace(templatePage, "%ARTIST_NAME%", musicPlaying.Artists, 1)
 	templatePage = strings.
